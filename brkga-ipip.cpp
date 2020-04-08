@@ -4,11 +4,36 @@
 #include "brkgaAPI/BRKGA.h"
 #include "brkgaAPI/MTRand.h"
 #include "IPIPDecoder.h"
+#include "IPIPInstance.h"
 
 int main(int argc, char* argv[]) {
+	if(argc < 2) { std::cerr << "usage: <DATA-file>" << std::endl; return -1; }
+
+	std::cout << "Welcome to the BRKGA API.\nFinding a (heuristic) minimizer for "
+			<< " the Inverse Power Index Problem." << std::endl;
+            
     const clock_t begin = clock();
 
-    const unsigned n = 6;      // size of chromosomes
+    const std::string instanceFile = std::string(argv[1]);
+	std::cout << "Instance file: " << instanceFile << std::endl;
+
+	// Read the instance:
+	IPIPInstance instance(instanceFile);
+    std::cout << "\nInstance read; the power indices given were:" << std::endl;
+    std::vector< double > powerIndices = instance.getPowerIndices();
+    std::cout << "[ ";
+	for(unsigned i = 0; i < powerIndices.size(); i++){
+        std::cout << powerIndices[i];
+        if(i != powerIndices.size() - 1) std::cout << ", ";
+    }
+    std::cout << " ]\n" << std::endl;
+
+    IPIPDecoder decoder(instance);  // initialize the decoder
+
+    const long unsigned rngSeed = 0;  // seed to the random number generator
+    MTRand rng(rngSeed);              // initialize the random number generator
+
+    const unsigned n = powerIndices.size() + 1;      // size of chromosomes
     const unsigned p = 256;    // size of population
     const double pe = 0.20;    // fraction of population to be the elite-set
     const double pm = 0.10;    // fraction of population to be replaced by mutants
@@ -16,19 +41,14 @@ int main(int argc, char* argv[]) {
     const unsigned K = 3;      // number of independent populations
     const unsigned MAXT = 1;   // number of threads for parallel decoding
 
-    IPIPDecoder decoder;  // initialize the decoder
-
-    const long unsigned rngSeed = 0;  // seed to the random number generator
-    MTRand rng(rngSeed);              // initialize the random number generator
-
     // initialize the BRKGA-based heuristic
     BRKGA<IPIPDecoder, MTRand> algorithm(n, p, pe, pm, rhoe, decoder, rng, K, MAXT);
 
-    unsigned generation = 0;        // current generation
     const unsigned X_INTVL = 100;   // exchange best individuals at every 100 generations
     const unsigned X_NUMBER = 2;    // exchange top 2 best
     const unsigned MAX_GENS = 100;  // run for 1000 gens
 
+    unsigned generation = 0;        // current generation
     do {
         const clock_t beginGen = clock();
         algorithm.evolve();  // evolve the population for one generation

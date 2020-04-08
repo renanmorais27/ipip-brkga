@@ -10,3 +10,5 @@ results.txt
 brkga-ipip
 IPIPDecoder.o
 brkga-ipip.o
+IPIPInstance.o
+IPIPSolver.o

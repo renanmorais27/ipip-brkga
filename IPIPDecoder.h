@@ -21,15 +21,18 @@
 #include <list>
 #include <vector>
 #include <algorithm>
+#include "IPIPInstance.h"
+#include "IPIPSolver.h"
 
 class IPIPDecoder {
 public:
-	IPIPDecoder();
+	IPIPDecoder(const IPIPInstance& instance);
 	~IPIPDecoder();
 
 	double decode(const std::vector< double >& chromosome) const;
 
 private:
+	const IPIPInstance& instance;
 };
 
 #endif

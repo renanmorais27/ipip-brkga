@@ -1,7 +1,7 @@
 # Macros:
 CPP= g++
 CFLAGS= -O3 -fopenmp
-OBJECTS= IPIPDecoder.o brkga-ipip.o
+OBJECTS= IPIPInstance.o IPIPSolver.o IPIPDecoder.o brkga-ipip.o
 
 # Targets:
 all: brkga-ipip
@@ -12,6 +12,12 @@ brkga-ipip: $(OBJECTS)
 brkga-ipip.o:
 	$(CPP) $(CFLAGS) -c brkga-ipip.cpp
 	
+IPIPInstance.o:
+	$(CPP) $(CFLAGS) -c IPIPInstance.cpp	
+
+IPIPSolver.o:
+	$(CPP) $(CFLAGS) -c IPIPSolver.cpp
+
 IPIPDecoder.o:
 	$(CPP) $(CFLAGS) -c IPIPDecoder.cpp
 
