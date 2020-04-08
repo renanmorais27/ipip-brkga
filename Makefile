@@ -1,20 +1,20 @@
 # Macros:
 CPP= g++
 CFLAGS= -O3 -fopenmp
-OBJECTS= SampleDecoder.o samplecode.o
+OBJECTS= IPIPDecoder.o brkga-ipip.o
 
 # Targets:
-all: samplecode
+all: brkga-ipip
 
-samplecode: $(OBJECTS)
-	$(CPP) $(CFLAGS) $(OBJECTS) -lpython3.7m -o samplecode
+brkga-ipip: $(OBJECTS)
+	$(CPP) $(CFLAGS) $(OBJECTS) -lpython3.7m -o brkga-ipip
         
-samplecode.o:
-	$(CPP) $(CFLAGS) -c samplecode.cpp
+brkga-ipip.o:
+	$(CPP) $(CFLAGS) -c brkga-ipip.cpp
 	
-SampleDecoder.o:
-	$(CPP) $(CFLAGS) -c SampleDecoder.cpp
+IPIPDecoder.o:
+	$(CPP) $(CFLAGS) -c IPIPDecoder.cpp
 
 # Remove:
 clean:
-	rm -f sampledecoder $(OBJECTS)
+	rm -f ipipdecoder $(OBJECTS)

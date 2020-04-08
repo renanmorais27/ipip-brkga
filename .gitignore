@@ -7,3 +7,6 @@ power_index/__pycache__/run.cpython-37.pyc
 power_index/__pycache__/shapleyshubik.cpython-37.pyc
 .samplecode.cpp.swp
 results.txt
+brkga-ipip
+IPIPDecoder.o
+brkga-ipip.o
