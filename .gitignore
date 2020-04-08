@@ -1,0 +1,9 @@
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+.vscode/.ropeproject/config.py
+.vscode/.ropeproject/objectdb
+power_index/__pycache__/common.cpython-37.pyc
+power_index/__pycache__/run.cpython-37.pyc
+power_index/__pycache__/shapleyshubik.cpython-37.pyc
+.samplecode.cpp.swp
+results.txt
