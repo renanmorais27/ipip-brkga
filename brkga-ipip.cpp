@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
 	// Read the instance:
 	IPIPInstance instance(instanceFile);
-    std::cout << "\nInstance read; the power indices given were:" << std::endl;
+    std::cout << "\nInstance read! The power indices given were:" << std::endl;
     std::vector< double > powerIndices = instance.getPowerIndices();
     std::cout << "[ ";
 	for(unsigned i = 0; i < powerIndices.size(); i++){
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     MTRand rng(rngSeed);              // initialize the random number generator
 
     const unsigned n = powerIndices.size() + 1;      // size of chromosomes
-    const unsigned p = 256;    // size of population
+    const unsigned p = 100;    // size of population
     const double pe = 0.20;    // fraction of population to be the elite-set
     const double pm = 0.10;    // fraction of population to be replaced by mutants
     const double rhoe = 0.70;  // probability that offspring inherit an allele from elite parent
@@ -47,6 +47,27 @@ int main(int argc, char* argv[]) {
     const unsigned X_INTVL = 100;   // exchange best individuals at every 100 generations
     const unsigned X_NUMBER = 2;    // exchange top 2 best
     const unsigned MAX_GENS = 100;  // run for 1000 gens
+
+    std::cout << "Running algorithm with:" << std::endl;
+    std::cout << "\t Size of chromosomes: " << n << std::endl;
+    std::cout << "\t Size of population: " << p << std::endl;
+    std::cout << "\t Fraction of pop to be elite set: " << pe << std::endl;
+    std::cout << "\t Fraction of pop to replace with mutants: " << pm << std::endl;
+    std::cout << "\t Allele inherit probability: " << rhoe << std::endl;
+    std::cout << "\t Independent populations: " << K << std::endl;
+    std::cout << "\t Exchange best individuals in " << X_INTVL << "th generation" << std::endl;
+    std::cout << "\t Exchange top " << X_NUMBER << " best\n" << std::endl;
+
+	// Print info about multi-threading:
+	#ifdef _OPENMP
+		std::cout << "Running for " << MAX_GENS << " generations using " << MAXT
+				<< " out of " << omp_get_max_threads()
+				<< " available thread units...\n" << std::endl;
+	#endif
+	#ifndef _OPENMP
+		std::cout << "Running for " << MAX_GENS
+				<< " generations without multi-threading...\n" << std::endl;
+	#endif
 
     unsigned generation = 0;        // current generation
     do {
@@ -66,7 +87,7 @@ int main(int argc, char* argv[]) {
     } while (generation < MAX_GENS && algorithm.getBestFitness() >= 0.00001);
 
     // print the fitness of the top 10 individuals of each population:
-    std::cout << "Fitness of the top 10 individuals of each population:" << std::endl;
+    std::cout << "\nFitness of the top 10 individuals of each population:" << std::endl;
     const unsigned bound = std::min(p, unsigned(10));  // makes sure we have 10 individuals
     for (unsigned i = 0; i < K; ++i) {
         std::cout << "Population #" << i << ":" << std::endl;

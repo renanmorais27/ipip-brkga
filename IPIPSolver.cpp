@@ -8,12 +8,23 @@
 #include "IPIPSolver.h"
 
 #include <python3.7m/Python.h>
-// #include <stdlib.h>
+
 #include <iostream>
 #include <numeric>
 
+double taxicabMDE();
+double taxicabDE(double desired, double found);
+double quadraticMDE();
+double quadraticDE(double desired, double found);
+
 IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& chromosome) : deltaError(0.0) {
     unsigned chromosomeSize = chromosome.size();
+
+    // Parameters required to minimize
+    //      Taxicab -> |d - p|
+    //      Quadratic -> (d - p) * (d - p)
+    double (*calcMaxDeltaError)() = quadraticMDE;
+    double (*calcDeltaError)(double, double) = quadraticDE;
 
     // The chromossome is composed by the genomes corresponding to the quota (first position)
     // and the weights (second to last positions)
@@ -23,24 +34,15 @@ IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& 
 
     // 2) Compute the sum of weights; if it is less than the quota the game is not defined
     double sum = std::accumulate(chromosome.begin() + 1, chromosome.end(), 0.0);
-
-    // Delta error is the maximum error defined for |d - p|, plus 1
     if (sum < quota) {
-        deltaError = 3;
+        deltaError = calcMaxDeltaError();
         return;
     }
-
-    // Delta error is the maximum error defined for |d - p|^2, plus 1
-    // if (sum < quota) {
-    //     deltaError = 5;
-    //     return;
-    // }
 
     // 3) The weights are the chromosome genomes
     std::vector<double> weights(chromosomeSize - 1);
     for (unsigned i = 1; i < chromosomeSize; i++) {
         weights[i - 1] = chromosome[i];
-        ;
     }
 
     // 4) Compute the power indices using external python script
@@ -76,15 +78,33 @@ IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& 
 
     Py_Finalize();
 
-    // 5) Compute the error between the desired and found power indices (delta) 
+    // 5) Compute the error between the desired and found power indices (delta)
     std::vector<double> powerIndicesDesired = instance.getPowerIndices();
     for (unsigned i = 0; i < chromosomeSize - 1; i++) {
-        deltaError += abs(powerIndicesDesired[i] - powerIndicesFound[i]);  // Delta error is |d - p|
-        // deltaError += (powerIndicesDesired[i] - powerIndicesFound[i]) *
-        //               (powerIndicesDesired[i] - powerIndicesFound[i]);  // Delta error is |d - p|^2
+        deltaError += calcDeltaError(powerIndicesDesired[i], powerIndicesFound[i]);
     }
 }
 
 IPIPSolver::~IPIPSolver() {}
 
 double IPIPSolver::getDeltaError() const { return deltaError; }
+
+double taxicabMDE() {
+    // Delta error is the maximum error defined for |d - p|, plus 1
+    return 3;
+}
+
+double taxicabDE(double desired, double found) {
+    // Delta error is |d - p|
+    return abs(desired - found);
+}
+
+double quadraticMDE() {
+    // Delta error is the maximum error defined for (d - p)^2, plus 1
+    return 5;
+}
+
+double quadraticDE(double desired, double found) {
+    // Delta error is (d - p)^2
+    return (desired - found) * (desired - found);
+}
