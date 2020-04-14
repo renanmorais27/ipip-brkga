@@ -2,7 +2,7 @@
 
 import math
 import itertools
-from common import get_max_coalition, coalition_sum
+from common import get_max_coalition
 
 
 def compute(quota, players):
@@ -12,11 +12,10 @@ def compute(quota, players):
     max_coalition = get_max_coalition(players, quota)
 
     players.sort(key=lambda x: x.weight, reverse=True)
-    sum_repo = {(): 0}
     for n in range(0, max_coalition + 1):
         coalitions = itertools.combinations(players, n)
         for c in coalitions:
-            c_weight = coalition_sum(sum_repo, c)
+            c_weight = sum(p.weight for p in c)
             if c_weight < quota:
                 for p in players:
                     if p not in c:
@@ -28,7 +27,5 @@ def compute(quota, players):
                             break
     for p in players:
         p.power_index /= facts[players_len]
-
-    players.sort(key=lambda x: x.key)
 
     return players
