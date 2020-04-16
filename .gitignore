@@ -12,3 +12,13 @@ IPIPDecoder.o
 brkga-ipip.o
 IPIPInstance.o
 IPIPSolver.o
+results/8-256-quad.png
+results/8-256-taxi.png
+results/8-euro-256-taxi.png
+results/8-euro-taxi-quota3-b.png
+power_index/__pycache__/banzhaf.cpython-37.pyc
+ct.py
+results/8-euro-taxi-quota1-ss
+results/8-euro-taxi-quota2-ss
+results/8-euro-taxi-quota3-ss
+results/time-br-20

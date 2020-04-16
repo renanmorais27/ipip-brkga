@@ -6,6 +6,9 @@
 #include "IPIPDecoder.h"
 #include "IPIPInstance.h"
 
+void printResult(std::vector< double > chromosome, unsigned n);
+void printTime(unsigned generation, double bestFitness, double genTime, double totalTime);
+
 int main(int argc, char* argv[]) {
 	if(argc < 2) { std::cerr << "usage: <DATA-file>" << std::endl; return -1; }
 
@@ -34,19 +37,21 @@ int main(int argc, char* argv[]) {
     MTRand rng(rngSeed);              // initialize the random number generator
 
     const unsigned n = powerIndices.size() + 1;      // size of chromosomes
-    const unsigned p = 100;    // size of population
+    const unsigned p = 10;    // size of population
     const double pe = 0.20;    // fraction of population to be the elite-set
     const double pm = 0.10;    // fraction of population to be replaced by mutants
     const double rhoe = 0.70;  // probability that offspring inherit an allele from elite parent
     const unsigned K = 3;      // number of independent populations
-    const unsigned MAXT = 1;   // number of threads for parallel decoding
+    const unsigned MAXT = 10;   // number of threads for parallel decoding
 
+    const clock_t beginGen = clock();
     // initialize the BRKGA-based heuristic
     BRKGA<IPIPDecoder, MTRand> algorithm(n, p, pe, pm, rhoe, decoder, rng, K, MAXT);
+    const clock_t endGen = clock();
 
-    const unsigned X_INTVL = 100;   // exchange best individuals at every 100 generations
+    const unsigned X_INTVL = 25;   // exchange best individuals at every 100 generations
     const unsigned X_NUMBER = 2;    // exchange top 2 best
-    const unsigned MAX_GENS = 100;  // run for 1000 gens
+    const unsigned MAX_GENS = 350;  // run for 1000 gens
 
     std::cout << "Running algorithm with:" << std::endl;
     std::cout << "\t Size of chromosomes: " << n << std::endl;
@@ -69,7 +74,12 @@ int main(int argc, char* argv[]) {
 				<< " generations without multi-threading...\n" << std::endl;
 	#endif
 
-    unsigned generation = 0;        // current generation
+    unsigned generation = 1;        // current generation
+    double bestFitness = algorithm.getBestFitness();
+
+    printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
+    printResult(algorithm.getPopulation(0).getChromosome(0), n);
+
     do {
         const clock_t beginGen = clock();
         algorithm.evolve();  // evolve the population for one generation
@@ -80,10 +90,18 @@ int main(int argc, char* argv[]) {
 
         const clock_t endGen = clock();
 
-        std::cout << std::setw(3) << generation << std::fixed;
-        std::cout << std::setw(14) << std::setprecision(7) << algorithm.getBestFitness();
-        std::cout << std::setw(10) << std::setprecision(2) << ((endGen - beginGen) / double(CLOCKS_PER_SEC)) << " s";
-        std::cout << std::setw(10) << std::setprecision(2) << ((endGen - begin) / double(CLOCKS_PER_SEC)) << " s" << std::endl;
+        if((generation % (MAX_GENS / 20)) == 0){
+            // std::cout << "---------------------------------------------------" << std::endl;
+            printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
+            std::cout <<  std::endl;
+            // printResult(algorithm.getBestChromosome(), n);
+        }
+        else if(algorithm.getBestFitness() < bestFitness){
+            bestFitness = algorithm.getBestFitness();
+            printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
+            printResult(algorithm.getBestChromosome(), n);
+        }
+
     } while (generation < MAX_GENS && algorithm.getBestFitness() >= 0.00001);
 
     // print the fitness of the top 10 individuals of each population:
@@ -94,22 +112,7 @@ int main(int argc, char* argv[]) {
         for (unsigned j = 0; j < bound; ++j) {
             std::cout << "\t" << j << ") " << std::setprecision(7) 
                 << algorithm.getPopulation(i).getFitness(j);
-            // double sum = 0.0;
-            // for (unsigned k = 1; k < n; k++) {
-            //     sum += algorithm.getPopulation(i).getChromosome(j)[k];
-            // }
-            // std::cout << " | [" << std::setprecision(5) << "1" << " ; ";
-            // std::cout << " | [" << std::setprecision(5) 
-            //     << algorithm.getPopulation(i).getChromosome(j)[0] << " ; ";
-            std::cout << " | [" << std::setprecision(5) 
-                << (n-1)*(algorithm.getPopulation(i).getChromosome(j)[0]*algorithm.getPopulation(i).getChromosome(j)[0]) << " ; ";
-
-            for (unsigned k = 1; k < n; k++) {
-                // std::cout << algorithm.getPopulation(i).getChromosome(j)[k] / sum;
-                std::cout << algorithm.getPopulation(i).getChromosome(j)[k];
-                if (k != n - 1) std::cout << " , ";
-            }
-            std::cout << "]" << std::endl;
+            printResult(algorithm.getPopulation(i).getChromosome(j), n);
         }
     }
 
@@ -120,4 +123,29 @@ int main(int argc, char* argv[]) {
     std::cout << "BRKGA run finished in " << (end - begin) / double(CLOCKS_PER_SEC) << " s." << std::endl;
 
     return 0;
+}
+
+void printResult(std::vector< double > chromosome, unsigned n){
+    double sum = 0.0;
+    for (unsigned k = 1; k < n; k++) {
+        sum += chromosome[k];
+    }
+    std::cout << " | [" << std::setprecision(5) 
+        // << (n-1)*(chromosome[0]*chromosome[0]) << " ; ";
+        // << ( sum * chromosome[0]) << " ; ";
+        // << ( sum * (0.5 + (pow(2 * (chromosome[0] - 0.5), 3)) / 2)) << " ; ";
+        << ( sum * 0.5 ) << " ; ";
+
+    for (unsigned k = 1; k < n; k++) {
+        std::cout << chromosome[k];
+        if (k != n - 1) std::cout << " , ";
+    }
+    std::cout << "]" << std::endl;
+}
+
+void printTime(unsigned generation, double bestFitness, double genTime, double totalTime){
+    std::cout << std::setw(3) << generation << std::fixed;
+    std::cout << std::setw(14) << std::setprecision(7) << bestFitness;
+    std::cout << std::setw(10) << std::setprecision(2) << (genTime / double(CLOCKS_PER_SEC)) << " s";
+    std::cout << std::setw(10) << std::setprecision(2) << (totalTime / double(CLOCKS_PER_SEC)) << " s";
 }

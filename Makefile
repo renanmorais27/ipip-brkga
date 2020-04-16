@@ -1,5 +1,5 @@
 # Macros:
-CPP= g++
+CPP= g++ -std=c++17
 CFLAGS= -O3 -fopenmp
 OBJECTS= IPIPInstance.o IPIPSolver.o IPIPDecoder.o brkga-ipip.o
 

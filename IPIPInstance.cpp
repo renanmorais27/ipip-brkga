@@ -8,7 +8,7 @@
 #include "IPIPInstance.h"
 #include <iostream>
 
-IPIPInstance::IPIPInstance(const std::string& instanceFile) throw(IPIPInstance::Error) : powerIndices() {
+IPIPInstance::IPIPInstance(const std::string& instanceFile) : powerIndices() {
     std::ifstream fin(instanceFile.c_str());
     if (!fin) {
         throw Error("IPIPInstance: Cannot open input file.");
@@ -37,7 +37,7 @@ IPIPInstance::~IPIPInstance() {}
 
 std::vector<double> IPIPInstance::getPowerIndices() const { return powerIndices; }
 
-void IPIPInstance::readPowerIndices(const std::string& line) throw(IPIPInstance::Error) {
+void IPIPInstance::readPowerIndices(const std::string& line) {
     std::istringstream sin(line);
     double value;
     sin >> value;

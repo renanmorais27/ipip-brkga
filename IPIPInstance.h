@@ -39,7 +39,7 @@ class IPIPInstance {
 public:
 	typedef std::runtime_error Error;
 
-	IPIPInstance(const std::string& instanceFile) throw(Error);
+	IPIPInstance(const std::string& instanceFile);
 	virtual ~IPIPInstance();
 
 	// Getters:
@@ -48,7 +48,7 @@ public:
 private:
 	std::vector< double > powerIndices;
 
-	void readPowerIndices(const std::string& line) throw(Error);
+	void readPowerIndices(const std::string& line);
 };
 
 #endif
