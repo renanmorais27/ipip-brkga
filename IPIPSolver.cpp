@@ -8,16 +8,16 @@
 #include "IPIPSolver.h"
 
 #include <python3.7m/Python.h>
-#include "cppitertools/combinations.hpp"
 
 #include <iostream>
 #include <numeric>
 
+#include "cppitertools/combinations.hpp"
 
 class Player {
-public:
-    Player(double w) : weight(w), powerIndex(0){};
-	// Player(){};
+   public:
+    Player(double w) : weight(w), powerIndex(0.0){};
+    // Player(){};
     double weight;
     double powerIndex;
 
@@ -27,6 +27,9 @@ public:
 
     bool operator>(const Player& player) const {
         return (weight > player.weight);
+    }
+    bool operator==(const Player& p) const {
+        return this == &p;
     }
 };
 
@@ -38,6 +41,7 @@ double quotaQuadraticToPlayers(std::vector<double> chromosome);
 double quotaLinearToWeights(std::vector<double> chromosome);
 double quotaCubicToWeights(std::vector<double> chromosome);
 std::vector<double> banzhaf(double quota, std::vector<double> weights);
+std::vector<double> shapleyshubik(double quota, std::vector<double> weights);
 
 IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& chromosome) : deltaError(0.0) {
     unsigned chromosomeSize = chromosome.size();
@@ -74,7 +78,7 @@ IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& 
     }
 
     // 4) Compute the power indices using banzhaf or shapley-shubik
-    std::vector<double> powerIndicesFound = banzhaf(quota, weights);
+    std::vector<double> powerIndicesFound = shapleyshubik(quota, weights);
 
     // 5) Compute the error between the desired and found power indices (delta)
     std::vector<double> powerIndicesDesired = instance.getPowerIndices();
@@ -132,20 +136,18 @@ double quotaCubicToWeights(std::vector<double> chromosome) {
     // return sum * (0.5 + (pow(2 * (chromosome[0] - 0.5), 3)) / 2);
 }
 
-
-std::vector<double> banzhaf(double quota, std::vector<double> weights){
-
+std::vector<double> banzhaf(double quota, std::vector<double> weights) {
     std::vector<Player> players;
-    for(auto&& w : weights){
+    for (auto&& w : weights) {
         players.push_back(Player(w));
     }
 
     std::sort(players.begin(), players.end());
     int maxCoalition = 0;
     double totalWeight = 0;
-    for(int i=0; i<players.size(); i++){
+    for (int i = 0; i < players.size(); i++) {
         totalWeight += players[i].weight;
-        if(totalWeight >= quota){
+        if (totalWeight >= quota) {
             maxCoalition = i + 1;
             break;
         }
@@ -177,9 +179,67 @@ std::vector<double> banzhaf(double quota, std::vector<double> weights){
         p.powerIndex /= total;
     }
     std::vector<double> powerIndices;
-    for(auto&& p : players){
+    for (auto&& p : players) {
         powerIndices.push_back(p.powerIndex);
     }
     return powerIndices;
 }
 
+std::vector<double> shapleyshubik(double quota, std::vector<double> weights) {
+    std::vector<Player> players;
+    for (auto&& w : weights) {
+        players.push_back(Player(w));
+    }
+
+    unsigned nPlayers = players.size();
+
+    std::sort(players.begin(), players.end());
+    int maxCoalition = 0;
+    double totalWeight = 0;
+    for (int i = 0; i < players.size(); i++) {
+        totalWeight += players[i].weight;
+        if (totalWeight >= quota) {
+            maxCoalition = i + 1;
+            break;
+        }
+    }
+
+    std::vector<unsigned long long int> factsCalc;
+    unsigned long long r;
+    unsigned np;
+    for (unsigned i = 0; i < nPlayers; i++) {
+        r = 1;
+        np = nPlayers;
+        for (unsigned d = 1; d <= i; d++) {
+            r *= np--;
+            r /= d;
+        }
+        r *= np;
+        factsCalc.push_back(r);
+    }
+
+    std::sort(players.begin(), players.end(), std::greater<>());
+
+    for (int n = 0; n <= maxCoalition; n++) {
+        for (auto&& coalition : iter::combinations(players, n)) {
+            double cWeight = std::accumulate(coalition.begin(),
+                                             coalition.end(),
+                                             0.0,
+                                             [](const double& a, Player& b) { return a + b.weight; });
+            if (cWeight >= quota) {
+                for (auto&& player : coalition) {
+                    if (cWeight - player.weight < quota)
+                        player.powerIndex += (1.0 / factsCalc[coalition.size() - 1]);
+                    else
+                        break;
+                }
+            }
+        }
+    }
+    std::vector<double> powerIndices;
+    for (auto&& p : players) {
+        powerIndices.push_back(p.powerIndex);
+    }
+    return powerIndices;
+}
+// if(std::find(coalition.begin(), coalition.end(), std::as_const(player)) == coalition.end())
