@@ -56,7 +56,7 @@ IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& 
     //      1 -> n * genome(q)^2
     //      2 -> sum(genome(w)) * genome(q)
     //      3 -> sum(genome(w)) * [1/2 + ((2 * (genome(q) - 1/2))^3) / 2]
-    double (*calcQuota)(std::vector<double>) = quotaCubicToWeights;
+    double (*calcQuota)(std::vector<double>) = quotaLinearToWeights;
 
     // The chromosome is composed by the genomes corresponding to the quota (first position)
     // and the weights (second to last positions)
@@ -78,7 +78,7 @@ IPIPSolver::IPIPSolver(const IPIPInstance& instance, const std::vector<double>& 
     }
 
     // 4) Compute the power indices using banzhaf or shapley-shubik
-    std::vector<double> powerIndicesFound = shapleyshubik(quota, weights);
+    std::vector<double> powerIndicesFound = banzhaf(quota, weights);
 
     // 5) Compute the error between the desired and found power indices (delta)
     std::vector<double> powerIndicesDesired = instance.getPowerIndices();
@@ -132,8 +132,7 @@ double quotaLinearToWeights(std::vector<double> chromosome) {
 // Range: [0, sum(w)]
 double quotaCubicToWeights(std::vector<double> chromosome) {
     double sum = std::accumulate(chromosome.begin() + 1, chromosome.end(), 0.0);
-    return sum * 0.5;
-    // return sum * (0.5 + (pow(2 * (chromosome[0] - 0.5), 3)) / 2);
+    return sum * (0.5 + (pow(2 * (chromosome[0] - 0.5), 3)) / 2);
 }
 
 std::vector<double> banzhaf(double quota, std::vector<double> weights) {
@@ -192,19 +191,29 @@ std::vector<double> shapleyshubik(double quota, std::vector<double> weights) {
     }
 
     unsigned nPlayers = players.size();
-
-    std::sort(players.begin(), players.end());
+    std::sort(players.begin(), players.end(), std::greater<>());
+    
     int maxCoalition = 0;
     double totalWeight = 0;
-    for (int i = 0; i < players.size(); i++) {
-        totalWeight += players[i].weight;
+    for (int i = 0; i < nPlayers; i++) {
+        totalWeight += players[nPlayers-1-i].weight;
         if (totalWeight >= quota) {
             maxCoalition = i + 1;
             break;
         }
     }
 
-    std::vector<unsigned long long int> factsCalc;
+    int minCoalition = 0;
+    totalWeight = 0;
+    for (int i = 0; i < nPlayers; i++) {
+        totalWeight += players[i].weight;
+        if (totalWeight >= quota) {
+            minCoalition = i;
+            break;
+        }
+    }
+
+    std::vector<double> factsCalc;
     unsigned long long r;
     unsigned np;
     for (unsigned i = 0; i < nPlayers; i++) {
@@ -215,12 +224,10 @@ std::vector<double> shapleyshubik(double quota, std::vector<double> weights) {
             r /= d;
         }
         r *= np;
-        factsCalc.push_back(r);
+        factsCalc.push_back(1.0/r);
     }
 
-    std::sort(players.begin(), players.end(), std::greater<>());
-
-    for (int n = 0; n <= maxCoalition; n++) {
+    for (int n = minCoalition; n <= maxCoalition; n++) {
         for (auto&& coalition : iter::combinations(players, n)) {
             double cWeight = std::accumulate(coalition.begin(),
                                              coalition.end(),
@@ -229,7 +236,7 @@ std::vector<double> shapleyshubik(double quota, std::vector<double> weights) {
             if (cWeight >= quota) {
                 for (auto&& player : coalition) {
                     if (cWeight - player.weight < quota)
-                        player.powerIndex += (1.0 / factsCalc[coalition.size() - 1]);
+                        player.powerIndex += factsCalc[coalition.size() - 1];
                     else
                         break;
                 }

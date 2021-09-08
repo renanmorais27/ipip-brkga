@@ -33,13 +33,13 @@ int main(int argc, char* argv[]) {
 
     IPIPDecoder decoder(instance);  // initialize the decoder
 
-    const long unsigned rngSeed = 0;  // seed to the random number generator
+    const long unsigned rngSeed = 2;  // seed to the random number generator
     MTRand rng(rngSeed);              // initialize the random number generator
 
     const unsigned n = powerIndices.size() + 1;      // size of chromosomes
     const unsigned p = 10;    // size of population
-    const double pe = 0.20;    // fraction of population to be the elite-set
-    const double pm = 0.10;    // fraction of population to be replaced by mutants
+    const double pe = 0.10;    // fraction of population to be the elite-set
+    const double pm = 0.20;    // fraction of population to be replaced by mutants
     const double rhoe = 0.70;  // probability that offspring inherit an allele from elite parent
     const unsigned K = 3;      // number of independent populations
     const unsigned MAXT = 10;   // number of threads for parallel decoding
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     const unsigned X_INTVL = 25;   // exchange best individuals at every 100 generations
     const unsigned X_NUMBER = 2;    // exchange top 2 best
-    const unsigned MAX_GENS = 350;  // run for 1000 gens
+    const unsigned MAX_GENS = 10000;  // run for 1000 gens
 
     std::cout << "Running algorithm with:" << std::endl;
     std::cout << "\t Size of chromosomes: " << n << std::endl;
@@ -80,6 +80,18 @@ int main(int argc, char* argv[]) {
     printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
     printResult(algorithm.getPopulation(0).getChromosome(0), n);
 
+        
+        // // print the fitness of the top 10 individuals of each population:
+        // std::cout << "\nFitness of the top 10 individuals of each population:" << std::endl;
+        // unsigned bound = std::min(p, unsigned(10));  // makes sure we have 10 individuals
+        // for (unsigned i = 0; i < K; ++i) {
+        //     std::cout << "Population #" << i << ":" << std::endl;
+        //     for (unsigned j = 0; j < bound; ++j) {
+        //         std::cout << "\t" << j << ") " << std::setprecision(7) 
+        //             << algorithm.getPopulation(i).getFitness(j);
+        //         printResult(algorithm.getPopulation(i).getChromosome(j), n);
+        //     }
+        // }
     do {
         const clock_t beginGen = clock();
         algorithm.evolve();  // evolve the population for one generation
@@ -90,17 +102,29 @@ int main(int argc, char* argv[]) {
 
         const clock_t endGen = clock();
 
-        if((generation % (MAX_GENS / 20)) == 0){
+        if(algorithm.getBestFitness() < bestFitness){
+            bestFitness = algorithm.getBestFitness();
+            printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
+            printResult(algorithm.getBestChromosome(), n);
+        }
+        else if((generation % (MAX_GENS / 60)) == 0){
             // std::cout << "---------------------------------------------------" << std::endl;
             printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
             std::cout <<  std::endl;
             // printResult(algorithm.getBestChromosome(), n);
         }
-        else if(algorithm.getBestFitness() < bestFitness){
-            bestFitness = algorithm.getBestFitness();
-            printTime(generation, algorithm.getBestFitness(), endGen - beginGen, endGen - begin);
-            printResult(algorithm.getBestChromosome(), n);
-        }
+        
+        // // print the fitness of the top 10 individuals of each population:
+        // std::cout << "\nFitness of the top 10 individuals of each population:" << std::endl;
+        // bound = std::min(p, unsigned(10));  // makes sure we have 10 individuals
+        // for (unsigned i = 0; i < K; ++i) {
+        //     std::cout << "Population #" << i << ":" << std::endl;
+        //     for (unsigned j = 0; j < bound; ++j) {
+        //         std::cout << "\t" << j << ") " << std::setprecision(7) 
+        //             << algorithm.getPopulation(i).getFitness(j);
+        //         printResult(algorithm.getPopulation(i).getChromosome(j), n);
+        //     }
+        // }
 
     } while (generation < MAX_GENS && algorithm.getBestFitness() >= 0.00001);
 
@@ -132,9 +156,9 @@ void printResult(std::vector< double > chromosome, unsigned n){
     }
     std::cout << " | [" << std::setprecision(5) 
         // << (n-1)*(chromosome[0]*chromosome[0]) << " ; ";
-        // << ( sum * chromosome[0]) << " ; ";
+        << ( sum * chromosome[0]) << " ; ";
         // << ( sum * (0.5 + (pow(2 * (chromosome[0] - 0.5), 3)) / 2)) << " ; ";
-        << ( sum * 0.5 ) << " ; ";
+        // << ( sum * 0.5 ) << " ; ";
 
     for (unsigned k = 1; k < n; k++) {
         std::cout << chromosome[k];
